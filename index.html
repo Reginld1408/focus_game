@@ -2,6 +2,7 @@ function playLevel() {
     const duration = levelDurations[level-1];
     const speed = levelSpeeds[level-1];
     const strobeSpeed = strobeIntervals[level-1];
+
     resetBall();
     const startTime = Date.now();
     frameCount = 0;
@@ -13,35 +14,38 @@ function playLevel() {
 
     const loop = setInterval(() => {
         const elapsed = (Date.now() - startTime) / 1000;
+
         if (elapsed >= duration) {
             clearInterval(loop);
             level++;
-            if(level > maxLevels){
+
+            if (level > maxLevels) {
                 gameState = 'game_over';
                 drawGameOver();
             } else {
                 gameState = 'level_complete';
                 drawLevelComplete();
             }
+
             return;
         }
 
         frameCount++;
 
         // Erratic ghost-like movement
-        if(Math.random()<0.1){
+        if (Math.random() < 0.1) {
             ball.dx += Math.random()*speed*1.5*2 - speed*1.5;
             ball.dy += Math.random()*speed*1.5*2 - speed*1.5;
         } else {
-            ball.dx += Math.random()-0.5;
-            ball.dy += Math.random()-0.5;
+            ball.dx += Math.random() - 0.5;
+            ball.dy += Math.random() - 0.5;
         }
 
         // Limit speed
         const mag = Math.sqrt(ball.dx*ball.dx + ball.dy*ball.dy);
-        if(mag > speed){
-            ball.dx = (ball.dx/mag)*speed;
-            ball.dy = (ball.dy/mag)*speed;
+        if (mag > speed) {
+            ball.dx = (ball.dx / mag) * speed;
+            ball.dy = (ball.dy / mag) * speed;
         }
 
         ball.x += ball.dx;
@@ -49,27 +53,37 @@ function playLevel() {
 
         // Steer away from edges
         const margin = ball.radius + 5;
-        if(ball.x<margin) ball.dx += Math.random()*0.5 + 0.5;
-        if(ball.x>WIDTH-margin) ball.dx -= Math.random()*0.5 + 0.5;
-        if(ball.y<margin) ball.dy += Math.random()*0.5 + 0.5;
-        if(ball.y>HEIGHT-margin) ball.dy -= Math.random()*0.5 + 0.5;
+
+        if (ball.x < margin) {
+            ball.dx += Math.random()*0.5 + 0.5;
+        }
+        if (ball.x > WIDTH - margin) {
+            ball.dx -= Math.random()*0.5 + 0.5;
+        }
+        if (ball.y < margin) {
+            ball.dy += Math.random()*0.5 + 0.5;
+        }
+        if (ball.y > HEIGHT - margin) {
+            ball.dy -= Math.random()*0.5 + 0.5;
+        }
 
         // Clamp inside screen
         ball.x = Math.max(ball.radius, Math.min(WIDTH - ball.radius, ball.x));
         ball.y = Math.max(ball.radius, Math.min(HEIGHT - ball.radius, ball.y));
 
         // Strobe: same as VS Code
-        if(frameCount % Math.max(1,Math.floor(strobeSpeed*60/10))===0){
-            ball.colorIndex = (ball.colorIndex+1)%RAINBOW.length;
+        if (frameCount % Math.max(1, Math.floor(strobeSpeed*60/10)) === 0) {
+            ball.colorIndex = (ball.colorIndex + 1) % RAINBOW.length;
         }
 
         // Draw
         ctx.fillStyle = 'black';
-        ctx.fillRect(0,0,WIDTH,HEIGHT);
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
         ctx.fillStyle = RAINBOW[ball.colorIndex];
         ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, 2*Math.PI);
+        ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
         ctx.fill();
+
     }, interval);
 }
-
