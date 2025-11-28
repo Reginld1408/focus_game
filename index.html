@@ -1,39 +1,120 @@
- function playLevel() {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Focus Game</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    user-select: none;
+  }
+  canvas {
+    display: block;
+  }
+  button {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgb(255,20,20);
+    border: none;
+    color: black;
+    padding: 20px 40px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  button:hover {
+    background: rgb(255,60,60);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<button id="actionBtn">Start</button>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const btn = document.getElementById('actionBtn');
+
+let WIDTH = window.innerWidth;
+let HEIGHT = window.innerHeight;
+canvas.width = WIDTH;
+canvas.height = HEIGHT;
+
+const RAINBOW = ['#FF0000','#FF7F00','#FFFF00','#00FF00','#0000FF','#4B0082','#8B00FF'];
+
+let level = 1;
+const maxLevels = 10;
+let gameState = 'main'; // main, play, level_complete, game_over
+let ball = {};
+let frameCount = 0;
+
+const levelDurations = Array.from({length:maxLevels},(_,i)=>10 + i*10); // 10s -> 100s
+const levelSpeeds = Array.from({length:maxLevels},(_,i)=>3 + i*3);      // speed scale
+const ballRadii = Array.from({length:maxLevels},(_,i)=>40 - (30*i/(maxLevels-1))); // 40->10
+const strobeIntervals = Array.from({length:maxLevels},(_,i)=>2 - i*(1/(maxLevels-1))); // reverse strobe
+
+btn.style.top = (HEIGHT/2) + 'px';
+
+function resetBall() {
+    ball.x = WIDTH/2;
+    ball.y = HEIGHT/2;
+    const angle = Math.random()*2*Math.PI;
+    ball.dx = Math.cos(angle)*levelSpeeds[level-1];
+    ball.dy = Math.sin(angle)*levelSpeeds[level-1];
+    ball.radius = ballRadii[level-1];
+    ball.colorIndex = 0;
+}
+
+function drawButton(text) {
+    btn.style.display = 'block';
+    btn.textContent = text;
+}
+
+function hideButton() {
+    btn.style.display = 'none';
+}
+
+// --- UPDATED PLAYLEVEL with fixed 60 FPS interval ---
+function playLevel() {
     const duration = levelDurations[level-1];
     const speed = levelSpeeds[level-1];
     const strobeSpeed = strobeIntervals[level-1];
-
     resetBall();
     const startTime = Date.now();
     frameCount = 0;
 
     hideButton();
 
-    // Fixed 60 FPS interval to match VS Code
-    const interval = 1000 / 60; // 16.666 ms per frame
+    // Fixed 60 FPS interval to match VS Code exactly
+    const interval = 1000 / 60; // 16.666ms per frame
 
     const loop = setInterval(() => {
-        const elapsed = (Date.now() - startTime) / 1000;
-
-        if (elapsed >= duration) {
+        const elapsed = (Date.now() - startTime)/1000;
+        if(elapsed >= duration){
             clearInterval(loop);
             level++;
-
-            if (level > maxLevels) {
+            if(level > maxLevels){
                 gameState = 'game_over';
                 drawGameOver();
             } else {
                 gameState = 'level_complete';
                 drawLevelComplete();
             }
-
             return;
         }
 
         frameCount++;
 
         // Erratic ghost-like movement
-        if (Math.random() < 0.1) {
+        if(Math.random() < 0.1){
             ball.dx += Math.random()*speed*1.5*2 - speed*1.5;
             ball.dy += Math.random()*speed*1.5*2 - speed*1.5;
         } else {
@@ -43,9 +124,9 @@
 
         // Limit speed
         const mag = Math.sqrt(ball.dx*ball.dx + ball.dy*ball.dy);
-        if (mag > speed) {
-            ball.dx = (ball.dx / mag) * speed;
-            ball.dy = (ball.dy / mag) * speed;
+        if(mag > speed){
+            ball.dx = (ball.dx/mag)*speed;
+            ball.dy = (ball.dy/mag)*speed;
         }
 
         ball.x += ball.dx;
@@ -53,37 +134,70 @@
 
         // Steer away from edges
         const margin = ball.radius + 5;
-
-        if (ball.x < margin) {
-            ball.dx += Math.random()*0.5 + 0.5;
-        }
-        if (ball.x > WIDTH - margin) {
-            ball.dx -= Math.random()*0.5 + 0.5;
-        }
-        if (ball.y < margin) {
-            ball.dy += Math.random()*0.5 + 0.5;
-        }
-        if (ball.y > HEIGHT - margin) {
-            ball.dy -= Math.random()*0.5 + 0.5;
-        }
+        if(ball.x<margin) ball.dx += Math.random()*0.5 + 0.5;
+        if(ball.x>WIDTH-margin) ball.dx -= Math.random()*0.5 + 0.5;
+        if(ball.y<margin) ball.dy += Math.random()*0.5 + 0.5;
+        if(ball.y>HEIGHT-margin) ball.dy -= Math.random()*0.5 + 0.5;
 
         // Clamp inside screen
         ball.x = Math.max(ball.radius, Math.min(WIDTH - ball.radius, ball.x));
         ball.y = Math.max(ball.radius, Math.min(HEIGHT - ball.radius, ball.y));
 
-        // Strobe: same as VS Code
-        if (frameCount % Math.max(1, Math.floor(strobeSpeed*60/10)) === 0) {
-            ball.colorIndex = (ball.colorIndex + 1) % RAINBOW.length;
+        // Strobe same as VS Code
+        if(frameCount % Math.max(1,Math.floor(strobeSpeed*60/10))===0){
+            ball.colorIndex = (ball.colorIndex+1) % RAINBOW.length;
         }
 
         // Draw
         ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
+        ctx.fillRect(0,0,WIDTH,HEIGHT);
         ctx.fillStyle = RAINBOW[ball.colorIndex];
         ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
+        ctx.arc(ball.x, ball.y, ball.radius, 0, 2*Math.PI);
         ctx.fill();
-
     }, interval);
 }
+
+// --- Buttons / Screens ---
+function drawLevelComplete(){
+    drawButton('Start Level '+level);
+}
+
+function drawGameOver(){
+    drawButton('Restart');
+    btn.onclick = ()=>{
+        level = 1;
+        gameState = 'main';
+        drawMainScreen();
+    };
+}
+
+function drawMainScreen(){
+    drawButton('Start');
+}
+
+// --- Button click handler ---
+btn.onclick = ()=>{
+    if(gameState==='main' || gameState==='level_complete'){
+        gameState='play';
+        playLevel();
+    } else if(gameState==='game_over'){
+        gameState='main';
+        level = 1;
+        drawMainScreen();
+    }
+};
+
+drawMainScreen();
+
+// --- Handle window resize ---
+window.addEventListener('resize', ()=>{
+    WIDTH = window.innerWidth;
+    HEIGHT = window.innerHeight;
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+    btn.style.top = (HEIGHT/2) + 'px';
+});
+</script>
+</body>
+</html>
